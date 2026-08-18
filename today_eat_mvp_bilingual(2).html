@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>今天吃什麼？｜오늘 뭐 먹지?</title>
+<style>
+:root{
+  --bg:#fff8f1; --card:#ffffff; --text:#2d2521; --muted:#7c6f68;
+  --accent:#ff7043; --accent2:#ffb74d; --line:#f0e3d8;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,-apple-system,BlinkMacSystemFont,"Noto Sans TC","Noto Sans KR",sans-serif;
+background:linear-gradient(135deg,#fff8f1 0%,#fff2e7 48%,#fffaf6 100%);color:var(--text);min-height:100vh}
+button{font:inherit}
+.container{max-width:1100px;margin:auto;padding:28px 20px 50px}
+.nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px}
+.logo{font-weight:900;font-size:22px;letter-spacing:-.5px}
+.lang{border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 14px;cursor:pointer}
+.hero{text-align:center;padding:25px 0 22px}
+.badge{display:inline-block;background:#fff0e8;color:#e85d2a;border-radius:999px;padding:7px 13px;font-size:13px;font-weight:800}
+h1{font-size:clamp(38px,6vw,64px);line-height:1.05;margin:18px 0 12px;letter-spacing:-2.5px}
+.subtitle{color:var(--muted);font-size:17px;margin:0 auto;max-width:650px;line-height:1.7}
+.layout{display:grid;grid-template-columns:1fr 1.25fr;gap:20px;margin-top:28px}
+.card{background:rgba(255,255,255,.92);border:1px solid var(--line);border-radius:24px;padding:22px;box-shadow:0 12px 35px rgba(100,60,30,.07)}
+.card h2{margin:0 0 16px;font-size:18px}
+.categories{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.cat{border:1px solid var(--line);background:#fff;border-radius:16px;padding:13px;cursor:pointer;text-align:left;transition:.2s}
+.cat:hover,.cat.active{border-color:#ff9b72;background:#fff4ed;transform:translateY(-1px)}
+.cat .emoji{font-size:22px;display:block;margin-bottom:5px}.cat small{color:var(--muted)}
+.actions{display:flex;gap:10px;margin-top:16px}
+.primary{flex:1;border:0;border-radius:16px;padding:15px;background:var(--accent);color:white;font-weight:900;cursor:pointer;box-shadow:0 8px 18px rgba(255,112,67,.25)}
+.secondary{border:1px solid var(--line);background:white;border-radius:16px;padding:15px 18px;cursor:pointer}
+.result{min-height:365px;display:flex;flex-direction:column;justify-content:center;text-align:center;position:relative;overflow:hidden}
+.result:before{content:"";position:absolute;width:220px;height:220px;border-radius:50%;background:#fff0e5;right:-90px;top:-80px;z-index:0}
+.result>*{position:relative;z-index:1}
+.result .foodemoji{font-size:72px;margin-bottom:8px}
+.result .country{color:#e85d2a;font-weight:800;font-size:14px}
+.result h3{font-size:40px;margin:8px 0 7px;letter-spacing:-1.5px}
+.result p{color:var(--muted);margin:0 auto;max-width:480px;line-height:1.6}
+.tags{display:flex;justify-content:center;gap:7px;flex-wrap:wrap;margin:17px 0}
+.tag{background:#f8f1eb;border-radius:999px;padding:6px 10px;font-size:12px;color:#6d5e55}
+.tip{font-size:13px;color:var(--muted)}
+.list{margin-top:20px}.list-title{display:flex;justify-content:space-between;align-items:center}
+.food-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.food-item{padding:13px;border:1px solid var(--line);border-radius:15px;background:#fff}
+.food-item b{display:block;margin-bottom:4px}.food-item span{font-size:12px;color:var(--muted)}
+@media(max-width:780px){.layout{grid-template-columns:1fr}.food-grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="nav">
+    <div class="logo">🍴 <span data-t="brand">오늘 뭐 먹지?</span></div>
+    <button class="lang" id="langBtn">中文</button>
+  </div>
+
+  <section class="hero">
+    <span class="badge" data-t="badge">AI 실습 I · Final MVP</span>
+    <h1 data-t="title">오늘 뭐 먹지?</h1>
+    <p class="subtitle" data-t="subtitle">매일 “뭐 먹지?” 고민하는 시간을 줄이고, 지금 당장 배달하기 좋은 메뉴를 랜덤으로 추천해드려요.</p>
+  </section>
+
+  <div class="layout">
+    <section class="card">
+      <h2 data-t="choose">취향을 골라보세요</h2>
+      <div class="categories" id="categories"></div>
+      <div class="actions">
+        <button class="primary" id="drawBtn">🎲 <span data-t="draw">오늘의 메뉴 뽑기</span></button>
+        <button class="secondary" id="allBtn" data-t="all">전체</button>
+      </div>
+    </section>
+
+    <section class="card result" id="result">
+      <div class="foodemoji">🎲</div>
+      <div class="country" data-t="readyCountry">RANDOM FOOD</div>
+      <h3 data-t="ready">무엇을 먹을지 결정해볼까요?</h3>
+      <p data-t="readyText">카테고리를 선택하고 버튼을 눌러보세요.</p>
+      <div class="tags"><span class="tag" data-t="tag1">배달하기 쉬운 메뉴</span><span class="tag" data-t="tag2">랜덤 추천</span><span class="tag" data-t="tag3">한·중 bilingual</span></div>
+      <div class="tip" data-t="tip">💡 결정하기 싫은 날일수록 랜덤에게 맡겨보세요.</div>
+    </section>
+  </div>
+
+  <section class="card list" hidden>
+    <div class="list-title">
+      <h2 data-t="menuTitle">추천 메뉴 미리보기</h2>
+      <span class="tip" id="count"></span>
+    </div>
+    <div class="food-grid" id="foodGrid"></div>
+  </section>
+</div>
+
+<script>
+const foods=[
+ {cat:"cn",emoji:"🥡",ko:"마라탕",zh:"麻辣燙",country:"중식",countryZh:"中式"},
+ {cat:"cn",emoji:"🍜",ko:"짜장면",zh:"炸醬麵",country:"중식",countryZh:"中式"},
+ {cat:"cn",emoji:"🥟",ko:"딤섬",zh:"港式點心",country:"중식",countryZh:"中式"},
+ {cat:"cn",emoji:"🍚",ko:"볶음밥",zh:"蛋炒飯",country:"중식",countryZh:"中式"},
+ {cat:"cn",emoji:"🍗",ko:"탕수육",zh:"糖醋肉",country:"중식",countryZh:"中式"},
+ {cat:"cn",emoji:"🌶️",ko:"마파두부",zh:"麻婆豆腐飯",country:"중식",countryZh:"中式"},
+ {cat:"jp",emoji:"🍣",ko:"초밥",zh:"壽司",country:"일식",countryZh:"日式"},
+ {cat:"jp",emoji:"🍜",ko:"라멘",zh:"拉麵",country:"일식",countryZh:"日式"},
+ {cat:"jp",emoji:"🍛",ko:"카레라이스",zh:"日式咖哩飯",country:"일식",countryZh:"日式"},
+ {cat:"jp",emoji:"🍛",ko:"돈카스",zh:"日式炸豬排",country:"일식",countryZh:"日式"},
+ {cat:"jp",emoji:"🍱",ko:"도시락",zh:"日式便當",country:"일식",countryZh:"日式"},
+ {cat:"jp",emoji:"🍤",ko:"텐동",zh:"天丼",country:"일식",countryZh:"日式"},
+ {cat:"jp",emoji:"🐟",ko:"사시미",zh:"生魚片",country:"일식",countryZh:"日式"},
+ {cat:"kr",emoji:"🍗",ko:"치킨",zh:"韓式炸雞",country:"한식",countryZh:"韓式"},
+ {cat:"kr",emoji:"🍲",ko:"부대찌개",zh:"部隊鍋",country:"한식",countryZh:"韓式"},
+ {cat:"kr",emoji:"🥘",ko:"닭갈비",zh:"辣炒雞排",country:"한식",countryZh:"韓式"},
+ {cat:"kr",emoji:"🥩",ko:"삼겹살",zh:"烤五花肉",country:"한식",countryZh:"韓式"},
+ {cat:"kr",emoji:"🍚",ko:"비빔밥",zh:"拌飯",country:"한식",countryZh:"韓式"},
+ {cat:"kr",emoji:"🍜",ko:"냉면",zh:"冷麵",country:"한식",countryZh:"韓式"},
+ {cat:"th",emoji:"🍜",ko:"팟타이",zh:"泰式炒河粉",country:"태국식",countryZh:"泰式"},
+ {cat:"th",emoji:"🥥",ko:"똠얌꿍",zh:"冬蔭功湯",country:"태국식",countryZh:"泰式"},
+ {cat:"th",emoji:"🍛",ko:"그린커리",zh:"綠咖哩",country:"태국식",countryZh:"泰式"},
+ {cat:"th",emoji:"🍚",ko:"카오팟",zh:"泰式炒飯",country:"태국식",countryZh:"泰式"},
+ {cat:"th",emoji:"🥗",ko:"쏨땀",zh:"青木瓜沙拉",country:"태국식",countryZh:"泰式"},
+ {cat:"us",emoji:"🍔",ko:"햄버거",zh:"漢堡",country:"미국식",countryZh:"美式"},
+ {cat:"us",emoji:"🍕",ko:"페퍼로니 피자",zh:"臘腸披薩",country:"미국식",countryZh:"美式"},
+ {cat:"us",emoji:"🌭",ko:"핫도그",zh:"熱狗",country:"미국식",countryZh:"美式"},
+ {cat:"us",emoji:"🍗",ko:"버팔로 윙",zh:"水牛城辣雞翅",country:"미국식",countryZh:"美式"},
+ {cat:"us",emoji:"🥪",ko:"클럽 샌드위치",zh:"總匯三明治",country:"미국식",countryZh:"美式"},
+ {cat:"it",emoji:"🍝",ko:"토마토 파스타",zh:"番茄義大利麵",country:"이탈리아식",countryZh:"義式"},
+ {cat:"it",emoji:"🍕",ko:"마르게리타 피자",zh:"瑪格麗特披薩",country:"이탈리아식",countryZh:"義式"},
+ {cat:"it",emoji:"🍕",ko:"고구마 피자",zh:"地瓜披薩",country:"이탈리아식",countryZh:"義式"},
+ {cat:"it",emoji:"🧀",ko:"까르보나라",zh:"培根蛋麵",country:"이탈리아식",countryZh:"義式"},
+ {cat:"it",emoji:"🥩",ko:"라자냐",zh:"千層麵",country:"이탈리아식",countryZh:"義式"},
+ {cat:"it",emoji:"🍄",ko:"버섯 리조또",zh:"蘑菇燉飯",country:"이탈리아식",countryZh:"義式"},
+ {cat:"other",emoji:"🥙",ko:"케밥",zh:"土耳其烤肉",country:"기타",countryZh:"其他"},
+ {cat:"other",emoji:"🌯",ko:"부리또",zh:"墨西哥捲餅",country:"기타",countryZh:"其他"},
+ {cat:"other",emoji:"🍜",ko:"쌀국수",zh:"越南河粉",country:"기타",countryZh:"其他"},
+ {cat:"other",emoji:"🍛",ko:"나시고렝",zh:"印尼炒飯",country:"기타",countryZh:"其他"},
+ {cat:"other",emoji:"🍛",ko:"타코",zh:"墨西哥玉米餅",country:"기타",countryZh:"其他"}
+,
+{"cat":"kr","emoji":"🦀","ko":"간장게장","zh":"醬油蟹","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍖","ko":"족발","zh":"豬腳","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🥩","ko":"수육","zh":"水煮豬肉","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"잔치국수","zh":"宴會麵","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍜","ko":"물냉면","zh":"水冷麵","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍜","ko":"비빔냉면","zh":"拌冷麵","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"차돌된장찌개","zh":"牛胸肉大醬湯","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"월남쌈","zh":"越南春捲","country":"한식","countryZh":"韓式"},
+{"cat":"cn","emoji":"🥡","ko":"짬뽕","zh":"韓式海鮮湯麵","country":"중식","countryZh":"中式"},
+{"cat":"cn","emoji":"🥡","ko":"잡탕밥","zh":"什錦燴飯","country":"중식","countryZh":"中式"},
+{"cat":"kr","emoji":"🍚","ko":"돼지갈비","zh":"豬排骨","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"소갈비","zh":"牛排骨","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"참치김치찌개","zh":"鮪魚泡菜鍋","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"육개장","zh":"牛肉湯","country":"한식","countryZh":"韓式"},
+{"cat":"cn","emoji":"🥡","ko":"팔보채","zh":"八寶菜","country":"중식","countryZh":"中式"},
+{"cat":"kr","emoji":"🍚","ko":"벌집삼겹살","zh":"烤蜂巢五花肉","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"평양냉면","zh":"平壤冷麵","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"알밥","zh":"魚卵拌飯","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"대패삼겹살","zh":"薄切五花肉","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"오징어버터구이","zh":"奶油烤魷魚","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"연탄불고기","zh":"碳烤牛肉","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"회덮밥","zh":"生魚片拌飯","country":"한식","countryZh":"韓式"},
+{"cat":"cn","emoji":"🥡","ko":"깐풍기","zh":"乾烹雞","country":"중식","countryZh":"中式"},
+{"cat":"kr","emoji":"🍚","ko":"미역국","zh":"海帶湯","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"물회","zh":"冷拌生魚片","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"콩나물국밥","zh":"豆芽湯飯","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"오징어회","zh":"生魷魚","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"참치회","zh":"鮪魚生魚片","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"고등어구이","zh":"烤鯖魚","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"명란젓","zh":"明太子","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"배추김치","zh":"白菜泡菜","country":"한식","countryZh":"韓式"},
+{"cat":"jp","emoji":"🍣","ko":"크림카레우동","zh":"奶油咖哩烏龍麵","country":"일식","countryZh":"日式"},
+{"cat":"kr","emoji":"🍚","ko":"갈비찜","zh":"燉排骨","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"치맥","zh":"炸雞配啤酒","country":"한식","countryZh":"韓式"},
+{"cat":"jp","emoji":"🥩","ko":"돈까스","zh":"日式豬排","country":"일식","countryZh":"日式"},
+{"cat":"kr","emoji":"🍚","ko":"계란말이","zh":"韓式玉子燒","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"숯불닭갈비","zh":"炭火辣炒雞排","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"소고기무국","zh":"牛肉蘿蔔湯","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"곰탕","zh":"牛骨湯","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍲","ko":"갈비탕","zh":"排骨湯","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"비빔국수","zh":"冷拌麵","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"참치비빔밥","zh":"鮪魚拌飯","country":"한식","countryZh":"韓式"},
+{"cat":"us","emoji":"🍔","ko":"불고기버거","zh":"烤肉漢堡","country":"미국식","countryZh":"美式"},
+{"cat":"kr","emoji":"🍚","ko":"수제비","zh":"手擀麵疙瘩湯","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"파전","zh":"蔥煎餅","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"오돌뼈","zh":"辣炒軟骨","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"양념게장","zh":"辣醬蟹","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🌶️","ko":"떡볶이","zh":"辣炒年糕","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"뼈해장국","zh":"脊骨醒酒湯","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"가리비구이","zh":"烤扇貝","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"비지찌개","zh":"豆渣鍋","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"간장새우","zh":"醬油蝦","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍙","ko":"김밥","zh":"紫菜飯捲","country":"한식","countryZh":"韓式"},
+{"cat":"jp","emoji":"🍣","ko":"생새우초밥","zh":"生蝦壽司","country":"일식","countryZh":"日式"},
+{"cat":"jp","emoji":"🍣","ko":"왕돈까스","zh":"巨型豬排","country":"일식","countryZh":"日式"},
+{"cat":"kr","emoji":"🍚","ko":"골뱅이소면무침","zh":"海螺拌細麵","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"김치만두","zh":"泡菜餃子","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"군만두","zh":"煎餃","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"물만두","zh":"水餃","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"멸치볶음","zh":"炒小魚乾","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"쫄면","zh":"辣拌冷麵","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"순대","zh":"韓式米腸","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"곱창","zh":"烤牛腸","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"대창","zh":"烤大腸","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"막창","zh":"烤豬大腸","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"LA갈비","zh":"LA牛小排","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"냉치킨","zh":"冷炸雞","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"선지해장국","zh":"牛血醒酒湯","country":"한식","countryZh":"韓式"},
+{"cat":"cn","emoji":"🥡","ko":"깐쇼새우","zh":"乾燒蝦","country":"중식","countryZh":"中式"},
+{"cat":"cn","emoji":"🥡","ko":"유산슬","zh":"什錦海鮮燴菜","country":"중식","countryZh":"中式"},
+{"cat":"kr","emoji":"🍚","ko":"돼지국밥","zh":"豬肉湯飯","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"횡성한우","zh":"橫城韓牛","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"새우죽","zh":"蝦粥","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"고추장찌개","zh":"辣椒醬鍋","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"회냉면","zh":"生魚片冷麵","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"생선까스","zh":"炸魚排","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"된장국","zh":"大醬湯","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"안동찜닭","zh":"安東燉雞","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"까르보나라떡볶이","zh":"培根蛋辣炒年糕","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"설렁탕","zh":"雪濃湯","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"육회비빔밥","zh":"韓式生牛肉拌飯","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"어묵꼬치","zh":"魚板串","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"열무비빔밥","zh":"嫩蘿蔔葉拌飯","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"광어회","zh":"比目魚生魚片","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"닭도리탕","zh":"辣燉雞","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"참치볶음밥","zh":"泡菜炒飯","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"양념갈비","zh":"醬料牛排骨","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🥩","ko":"한우스테이크","zh":"韓牛牛排","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"돌솥비빔밥","zh":"石鍋拌飯","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"성게알","zh":"海膽","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"조기구이","zh":"烤黃花魚","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"돼지갈비찜","zh":"燉豬排骨","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"명란스파게티","zh":"明太子義大利麵","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"떡갈비","zh":"韓式牛肉餅","country":"한식","countryZh":"韓式"},
+{"cat":"cn","emoji":"🥡","ko":"양꼬치","zh":"羊肉串","country":"중식","countryZh":"中式"},
+{"cat":"cn","emoji":"🥡","ko":"짬뽕밥","zh":"海鮮湯飯","country":"중식","countryZh":"中式"},
+{"cat":"jp","emoji":"🍣","ko":"볶음우동","zh":"炒烏龍麵","country":"일식","countryZh":"日式"},
+{"cat":"kr","emoji":"🍚","ko":"닭강정","zh":"韓式甜辣炸雞","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"김말이튀김","zh":"紫菜冬粉炸物","country":"한식","countryZh":"韓式"},
+{"cat":"jp","emoji":"🥩","ko":"치즈돈까스정식","zh":"起司豬排定食","country":"일식","countryZh":"日式"},
+{"cat":"kr","emoji":"🍲","ko":"삼계탕","zh":"蔘雞湯","country":"한식","countryZh":"韓式"},
+{"cat":"jp","emoji":"🍣","ko":"카레우동","zh":"咖哩烏龍麵","country":"일식","countryZh":"日式"},
+{"cat":"kr","emoji":"🍚","ko":"순두부찌개","zh":"嫩豆腐鍋","country":"한식","countryZh":"韓式"},
+{"cat":"us","emoji":"🍔","ko":"이삭토스트","zh":"伊薩克吐司","country":"미국식","countryZh":"美式"},
+{"cat":"kr","emoji":"🍚","ko":"국물닭발","zh":"湯汁辣雞爪","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"해물순두부","zh":"海鮮嫩豆腐鍋","country":"한식","countryZh":"韓式"},
+{"cat":"jp","emoji":"🍣","ko":"규동","zh":"牛丼","country":"일식","countryZh":"日式"},
+{"cat":"kr","emoji":"🍚","ko":"편육","zh":"冷切豬肉","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"김치전","zh":"泡菜煎餅","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"소갈비찜","zh":"燉牛排骨","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"동그랑땡","zh":"韓式肉丸煎餅","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"우삼겹","zh":"烤牛胸薄片","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"전병","zh":"煎餅","country":"한식","countryZh":"韓式"},
+{"cat":"jp","emoji":"🍣","ko":"스테키동","zh":"牛排丼","country":"일식","countryZh":"日式"},
+{"cat":"kr","emoji":"🍚","ko":"주먹김밥","zh":"手握紫菜飯捲","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"갈치조림","zh":"燉帶魚","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"안성국밥","zh":"安城湯飯","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"호박나물","zh":"南瓜炒菜","country":"한식","countryZh":"韓式"},
+{"cat":"cn","emoji":"🥡","ko":"짜장밥","zh":"炸醬飯","country":"중식","countryZh":"中式"},
+{"cat":"kr","emoji":"🍚","ko":"감자탕","zh":"馬鈴薯排骨湯","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"육사시미","zh":"生牛肉","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"곱창전골","zh":"牛腸火鍋","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"불고기","zh":"韓式烤肉","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"참치김밥","zh":"鮪魚紫菜飯捲","country":"한식","countryZh":"韓式"},
+{"cat":"jp","emoji":"🍣","ko":"타코야끼","zh":"章魚燒","country":"일식","countryZh":"日式"},
+{"cat":"kr","emoji":"🍚","ko":"참치뱃살","zh":"鮪魚生魚片","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"떡국","zh":"年糕湯","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"잡채","zh":"韓式炒冬粉","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"마크정식","zh":"馬克定食","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"명란삼각김밥","zh":"明太子三角飯糰","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🥩","ko":"함박스테이크","zh":"漢堡排","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"소금구이","zh":"鹽烤豬肉","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"잡채밥","zh":"什錦炒冬粉飯","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"토마토리조또","zh":"番茄燉飯","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"맥반석오징어","zh":"麥飯石烤魷魚","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"라면","zh":"韓式泡麵","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"파닭","zh":"蔥香炸雞","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"양구이","zh":"烤羊肉","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"단호박죽","zh":"皮蛋瘦肉粥","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"장조림","zh":"醬燉牛肉","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"청국장","zh":"清麴醬鍋","country":"한식","countryZh":"韓式"},
+{"cat":"jp","emoji":"🍜","ko":"우동","zh":"烏龍麵","country":"일식","countryZh":"日式"},
+{"cat":"kr","emoji":"🍚","ko":"김칫국","zh":"泡菜湯","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"야채곱창","zh":"蔬菜牛腸","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"빈대떡","zh":"綠豆煎餅","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍲","ko":"샤브샤브","zh":"涮涮鍋","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"오리훈제구이","zh":"煙燻烤鴨","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"버섯칼국수","zh":"蘑菇刀削麵","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"들깨수제비","zh":"紫蘇籽麵片湯","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"하이라이스","zh":"日式燴飯","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"전주비빔밥","zh":"全州拌飯","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"크림레몬새우","zh":"奶油檸檬蝦","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"낙지볶음밥","zh":"辣炒章魚炒飯","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"불족발","zh":"辣味豬腳","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"주먹밥","zh":"飯糰","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"가지덥밥","zh":"茄子蓋飯","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"양대창","zh":"牛大腸拼盤","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"막국수","zh":"蕎麥冷麵","country":"한식","countryZh":"韓式"},
+{"cat":"jp","emoji":"🍣","ko":"유부초밥","zh":"豆皮壽司","country":"일식","countryZh":"日式"},
+{"cat":"kr","emoji":"🍚","ko":"굴국밥","zh":"牡蠣湯飯","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍲","ko":"해물탕","zh":"海鮮鍋","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"컵밥","zh":"蓋飯","country":"한식","countryZh":"韓式"},
+{"cat":"jp","emoji":"🍣","ko":"야끼우동","zh":"炒烏龍麵","country":"일식","countryZh":"日式"},
+{"cat":"kr","emoji":"🍚","ko":"소고기국밥","zh":"牛肉湯飯","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"깡통도시락","zh":"鐵盒便當","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"사골우거지국","zh":"牛骨白菜湯","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"코다리냉면","zh":"半乾明太魚冷麵","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"치즈등갈비","zh":"起司豬肋排","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"갈치구이","zh":"烤帶魚","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"도미회","zh":"鯛魚生魚片","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"대게살","zh":"帝王蟹","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"새우구이","zh":"烤蝦","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"메로구이","zh":"烤銀鱈魚","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"고기국수","zh":"豬肉湯麵","country":"한식","countryZh":"韓式"},
+{"cat":"jp","emoji":"🍣","ko":"냉모밀","zh":"冷蕎麥麵","country":"일식","countryZh":"日式"},
+{"cat":"jp","emoji":"🍣","ko":"야끼소바","zh":"炒麵","country":"일식","countryZh":"日式"},
+{"cat":"kr","emoji":"🍚","ko":"찹쌀닭죽","zh":"糯米雞粥","country":"한식","countryZh":"韓式"},
+{"cat":"us","emoji":"🍔","ko":"길거리토스트","zh":"韓式街頭吐司","country":"미국식","countryZh":"美式"},
+{"cat":"kr","emoji":"🍚","ko":"돼지주물럭","zh":"辣炒豬肉","country":"한식","countryZh":"韓式"},
+{"cat":"th","emoji":"🍚","ko":"나시고랭","zh":"印尼炒飯","country":"태국식","countryZh":"泰式"},
+{"cat":"kr","emoji":"🍚","ko":"방어회","zh":"鰤魚生魚片","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"새싹비빔밥","zh":"蔬菜拌飯","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"따끈한밥에스팸한조각","zh":"午餐肉配飯","country":"한식","countryZh":"韓式"},
+{"cat":"us","emoji":"🍔","ko":"버거킹와퍼","zh":"華堡","country":"미국식","countryZh":"美式"},
+{"cat":"kr","emoji":"🍚","ko":"삼각김밥","zh":"三角飯糰","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍱","ko":"한솥도시락","zh":"便當","country":"한식","countryZh":"韓式"},
+{"cat":"jp","emoji":"🍣","ko":"김치가츠나베우동","zh":"泡菜豬排鍋燴烏龍麵","country":"일식","countryZh":"日式"},
+{"cat":"cn","emoji":"🥡","ko":"라조기","zh":"辣子雞","country":"중식","countryZh":"中式"},
+{"cat":"cn","emoji":"🥡","ko":"삼선볶음밥","zh":"三鮮炒飯","country":"중식","countryZh":"中式"},
+{"cat":"kr","emoji":"🍚","ko":"생선전","zh":"海鮮煎餅","country":"한식","countryZh":"韓式"},
+{"cat":"jp","emoji":"🍣","ko":"나가사끼짬뽕","zh":"長崎白湯海鮮麵","country":"일식","countryZh":"日式"},
+{"cat":"kr","emoji":"🍚","ko":"오모리김치찌개","zh":"老式泡菜鍋","country":"한식","countryZh":"韓式"},
+{"cat":"jp","emoji":"🍣","ko":"돈코츠라멘","zh":"豚骨拉麵","country":"일식","countryZh":"日式"},
+{"cat":"jp","emoji":"🍣","ko":"디진다돈까스","zh":"超辣豬排","country":"일식","countryZh":"日式"},
+{"cat":"jp","emoji":"🍣","ko":"냉우동","zh":"冷烏龍麵","country":"일식","countryZh":"日式"},
+{"cat":"kr","emoji":"🍚","ko":"바지락칼국수","zh":"蛤蜊刀削麵","country":"한식","countryZh":"韓式"},
+{"cat":"jp","emoji":"🍣","ko":"오꼬노미야끼","zh":"大阪燒","country":"일식","countryZh":"日式"},
+{"cat":"kr","emoji":"🍚","ko":"꽃게찜","zh":"蒸螃蟹","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"감자전","zh":"馬鈴薯煎餅","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"아바이순대","zh":"魷魚米腸","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"목살","zh":"烤豬頸肉","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"조개관자구이","zh":"烤貝柱","country":"한식","countryZh":"韓式"},
+{"cat":"cn","emoji":"🥡","ko":"간짬뽕","zh":"乾拌海鮮麵","country":"중식","countryZh":"中式"},
+{"cat":"jp","emoji":"🍣","ko":"피카츄돈까스","zh":"皮卡丘豬排","country":"일식","countryZh":"日式"},
+{"cat":"kr","emoji":"🍚","ko":"닭꼬치","zh":"雞肉串","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"명량핫도그","zh":"韓式熱狗","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"내장탕","zh":"內臟湯","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"흑돼지","zh":"烤黑豬肉","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"순대국","zh":"血腸湯","country":"한식","countryZh":"韓式"},
+{"cat":"kr","emoji":"🍚","ko":"해물삼합","zh":"海鮮三合一","country":"한식","countryZh":"韓式"},
+{"cat":"tw","emoji":"🥩","ko":"철판스테이크","zh":"鐵板牛排","country":"대만식","countryZh":"台式"},
+{"cat":"tw","emoji":"🥘","ko":"철판닭갈비","zh":"鐵板雞腿排","country":"대만식","countryZh":"台式"},
+{"cat":"tw","emoji":"🥩","ko":"철판갈비","zh":"鐵板牛小排","country":"대만식","countryZh":"台式"},
+{"cat":"tw","emoji":"🍜","ko":"철판우동","zh":"鐵板炒烏龍","country":"대만식","countryZh":"台式"},
+{"cat":"tw","emoji":"🍜","ko":"우육탕면","zh":"牛肉湯麵","country":"대만식","countryZh":"台式"},
+{"cat":"tw","emoji":"🍜","ko":"우육면","zh":"牛肉麵","country":"대만식","countryZh":"台式"},
+{cat:"cn",emoji:"🍚",ko:"새우계란볶음밥",zh:"蝦仁蛋炒飯",country:"대만식",countryZh:"台式"},
+{"cat":"kr","emoji":"🍚","ko":"불닭볶음면","zh":"火辣雞炒麵","country":"한식","countryZh":"韓式"}];
+
+const cats=[
+ {id:"cn",emoji:"🥡",ko:"중식",zh:"中式",desc:"마라탕 · 딤섬 · 볶음밥"},
+ {id:"jp",emoji:"🍣",ko:"일식",zh:"日式",desc:"초밥 · 라멘 · 덮밥"},
+ {id:"kr",emoji:"🍗",ko:"한식",zh:"韓式",desc:"치킨 · 찌개 · 삼겹살"},
+ {id:"th",emoji:"🌶️",ko:"태국식",zh:"泰式",desc:"팟타이 · 커리 · 똠얌"},
+ {id:"us",emoji:"🍔",ko:"미국식",zh:"美式",desc:"버거 · 피자 · 윙"},
+ {id:"it",emoji:"🍝",ko:"이탈리아식",zh:"義式",desc:"파스타 · 피자 · 리조또"}
+];
+
+let lang="ko", selected="all";
+
+const T={
+ko:{brand:"오늘 뭐 먹지?",badge:"매일 고민하는 메뉴 추천",title:"오늘 뭐 먹지?",subtitle:"매일 “뭐 먹지?” 고민하는 시간을 줄이고, 지금 당장 메뉴를 랜덤으로 추천해드려요.",choose:"취향을 골라보세요",draw:"오늘의 메뉴 뽑기",all:"전체",menuTitle:"추천 메뉴 미리보기",readyCountry:"RANDOM FOOD",ready:"무엇을 먹을지 결정해볼까요?",readyText:"카테고리를 선택하고 버튼을 눌러보세요.",tag1:"배달하기 쉬운 메뉴",tag2:"랜덤 추천",tag3:"한·중 bilingual",tip:"💡 결정하기 싫은 날일수록 랜덤에게 맡겨보세요."},
+zh:{brand:"今天吃什麼？",badge:"每天都不知道要吃什麼",title:"今天吃什麼？",subtitle:"每天都在煩惱「要吃什麼？」太麻煩了。選擇喜歡的料理類型，讓系統幫你隨機決定今天的外送餐點。",choose:"選擇你想吃的類型",draw:"抽選今天吃什麼",all:"全部",menuTitle:"推薦料理預覽",readyCountry:"RANDOM FOOD",ready:"要不要讓系統幫你決定？",readyText:"先選擇料理類型，再按下抽選按鈕。",tag1:"適合外送",tag2:"隨機推薦",tag3:"韓中雙語",tip:"💡 越不想決定的日子，越適合交給隨機抽選。"}
+};
+
+function render(){
+ document.querySelectorAll("[data-t]").forEach(el=>el.textContent=T[lang][el.dataset.t]||el.textContent);
+ document.getElementById("langBtn").textContent=lang==="ko"?"中文":"한국어";
+ document.documentElement.lang=lang==="ko"?"ko":"zh-Hant";
+ const c=document.getElementById("categories"); c.innerHTML="";
+ cats.forEach(x=>{
+   const b=document.createElement("button"); b.className="cat"+(selected===x.id?" active":"");
+   b.innerHTML=`<span class="emoji">${x.emoji}</span><b>${lang==="ko"?x.ko:x.zh}</b><br><small>${x.desc}</small>`;
+   b.onclick=()=>{selected=x.id;render()};
+   c.appendChild(b);
+ });
+ const arr=selected==="all"?foods:foods.filter(f=>f.cat===selected);
+ document.getElementById("count").textContent=`${arr.length} ${lang==="ko"?"menus":"道料理"}`;
+ document.getElementById("foodGrid").innerHTML=arr.map(f=>`<div class="food-item"><b>${f.emoji} ${lang==="ko"?f.ko:f.zh}</b><span>${lang==="ko"?f.country:f.countryZh}</span></div>`).join("");
+}
+function draw(){
+ const arr=selected==="all"?foods:foods.filter(f=>f.cat===selected);
+ const f=arr[Math.floor(Math.random()*arr.length)];
+ const r=document.getElementById("result");
+ r.innerHTML=`<div class="foodemoji">${f.emoji}</div><div class="country">${lang==="ko"?f.country:f.countryZh}</div><h3>${lang==="ko"?f.ko:f.zh}</h3><p>${lang==="ko"?"오늘은 이걸로 결정! 배달 앱에서 바로 검색해보세요.":"今天就決定吃這個！直接在外送 App 搜尋看看吧。"}</p><div class="tags"><span class="tag">${lang==="ko"?"랜덤 당첨":"隨機抽中"}</span><span class="tag">${lang==="ko"?"배달 추천":"外送推薦"}</span><span class="tag">${lang==="ko"?"고민 끝":"選擇障礙結束"}</span></div><div class="tip">${lang==="ko"?"🎉 다시 뽑고 싶다면 버튼을 한 번 더 눌러주세요.":"🎉 不滿意？再抽一次就好！"}</div>`;
+}
+document.getElementById("drawBtn").onclick=draw;
+document.getElementById("allBtn").onclick=()=>{selected="all";render()};
+document.getElementById("langBtn").onclick=()=>{lang=lang==="ko"?"zh":"ko";render()};
+render();
+</script>
+</body>
+</html>
